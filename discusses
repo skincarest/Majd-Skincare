@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>الدردشة الذكية لمدونة العناية بالبشرة</title>
+    <style>
+        body { font-family: 'Cairo', 'Arial', sans-serif; background: #f5f6fa; margin: 0; direction: rtl; }
+        .container { max-width: 500px; margin: 50px auto; padding: 30px 16px; background: #fff; border-radius: 16px; box-shadow: 0 2px 8px #0001;}
+        h2 { text-align: center; color: #3471c1; margin-bottom: 16px; }
+        #chatbox {height: 320px; overflow-y: auto; border: 1px solid #c6e2ff; background: #eef8ff; border-radius: 10px; margin-bottom: 18px; padding: 16px; font-size: 1.13em;}
+        .user-msg { color: #3471c1; margin-bottom: 10px; }
+        .ai-msg { color: #126e51; background: #e7fff4; border-radius:8px; margin-bottom: 14px; padding: 10px;}
+        form { display: flex; gap: 7px;}
+        input[type="text"] { flex:1; padding:12px; border-radius:6px; border: 1px solid #b8daf3; font-size:1em;}
+        button { background:#3471c1; color:#fff; border:0; border-radius:6px; padding:11px 30px; font-size:1.04em; cursor:pointer;}
+        .loading { color: #f47b07; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>💬 اسأل الذكاء الاصطناعي عن كل ما يخص العناية بالبشرة</h2>
+        <div id="chatbox">
+            <div class="ai-msg">مرحباً بك! يمكنك سؤالي عن أي شيء يخص العناية بالبشرة وسأجيبك فوراً 🤖🌸</div>
+        </div>
+        <form id="chat-form" autocomplete="off">
+            <input type="text" id="userInput" placeholder="اكتب سؤالك عن العناية بالبشرة هنا..." required>
+            <button type="submit">إرسال</button>
+        </form>
+    </div>
+    <script>
+        const chatbox = document.getElementById('chatbox');
+        const form = document.getElementById('chat-form');
+        const userInput = document.getElementById('userInput');
+        const apiKey = "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"; // Secure this in production!
+
+        form.onsubmit = async function(e) {
+            e.preventDefault();
+            const question = userInput.value.trim();
+            if (!question) return;
+
+            appendMessage(question, 'user');
+            userInput.value = '';
+            appendMessage("...جاري التفكير والإجابة", 'ai', true);
+
+            try {
+                const response = await fetch("https://api.perplexity.ai/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "Authorization": "Bearer " + apiKey
+                    },
+                    body: JSON.stringify({
+                        model: "sonar-medium-online",
+                        messages: [
+                            { role: "system", content: "أجب باللغة العربية فقط. تصرّف كمستشار عناية بالبشرة. كن عملياً ودقيقاً ومقنعاً." },
+                            { role: "user", content: question }
+                        ]
+                    })
+                });
+
+                if (!response.ok) throw new Error("تعذر الوصول إلى خدمة الذكاء الاصطناعي.");
+                const result = await response.json();
+
+                // Remove the "...جاري التفكير..." message
+                removeLoadingMsg();
+
+                const answer = result.choices &&
+                               result.choices[0] &&
+                               result.choices[0].message &&
+                               result.choices[0].message.content
+                               ? result.choices[0].message.content.trim()
+                               : "عذراً، لم أتمكن من فهم سؤالك. حاول مرة أخرى.";
+
+                appendMessage(answer, 'ai');
+                // Scroll to bottom
+                chatbox.scrollTop = chatbox.scrollHeight;
+            } catch (err) {
+                removeLoadingMsg();
+                appendMessage("حدث خطأ، يرجى المحاولة لاحقاً. " + err.message, 'ai');
+            }
+        };
+
+        function appendMessage(msg, sender, isLoading = false) {
+            const div = document.createElement('div');
+            div.className = sender === 'user' ? 'user-msg' : 'ai-msg';
+            if (isLoading) div.classList.add('loading');
+            div.innerHTML = (sender === 'user' ? "👤 " : "🤖 ") + msg.replace(/\n/g,"<br>");
+            chatbox.appendChild(div);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+        function removeLoadingMsg() {
+            const loaders = chatbox.querySelectorAll('.loading');
+            loaders.forEach(l => l.remove());
+        }
+    </script>
+</body>
+</html>
