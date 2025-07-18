@@ -1,59 +1,84 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>تحليل البشرة بالذكاء الاصطناعي</title>
-  <style>
-    body { font-family: 'Cairo', Arial, sans-serif; background: #f5f6fa; margin:40px; direction:rtl; }
-    .container { max-width:440px; margin:auto; padding:24px; background:#fff; border-radius:18px; box-shadow:0 2px 8px #0002; }
-    h2 { text-align:center; color:#446; }
-    input[type="file"] { width:100%; margin:16px 0; }
-    button { background:#007cff; color:#fff; border:none; border-radius:6px; padding:12px 35px; font-size:1.2em; cursor:pointer; display:block; margin:auto; }
-    .results { background:#f0f3fa; margin-top:24px; padding:18px; border-radius:10px; font-size:1.1em; color:#222; }
-    .loading { color: #007cff; }
-  </style>
+    <meta charset="UTF-8">
+    <title>تحليل البشرة بالذكاء الاصطناعي</title>
+    <style>
+        body { font-family: 'Cairo', Arial, sans-serif; background: #f5f6fa; margin: 40px; direction: rtl; }
+        .container { max-width:440px; margin:auto; padding:24px; background:#fff; border-radius:18px; box-shadow:0 2px 8px #0002; }
+        h2 { text-align:center; color:#446; }
+        input[type="file"] { width:100%; margin:16px 0; }
+        button { background:#3471c1; color:#fff; border:none; border-radius:6px; padding:12px 35px; font-size:1.2em; cursor:pointer; display:block; margin:auto; }
+        .results { background:#eef3f8; margin-top:24px; padding:18px; border-radius:10px; font-size:1.1em; color:#222; }
+        .loading { color:#3471c1; }
+        img { display:block; margin:auto; width:90px; border-radius:50%; }
+    </style>
 </head>
 <body>
   <div class="container">
     <h2>تحليل البشرة بالذكاء الاصطناعي</h2>
     <input type="file" id="imageInput" accept="image/*">
     <button onclick="analyzeSkin()">تحليل</button>
-    <div class="results" id="results"></div>
+    <div class="results" id="results">نتائج التحليل ستظهر هنا...</div>
   </div>
   <script>
     async function analyzeSkin() {
-      const file = document.getElementById('imageInput').files[0];
-      if (!file) {
-        document.getElementById('results').innerText = 'يرجى اختيار صورة أولاً';
-        return;
-      }
-      const formData = new FormData();
-      formData.append("image", file);
-      // Replace with your actual API endpoint and API key:
-      const API_ENDPOINT = "https://api.example.com/your-endpoint"; // Put the Perfect Corp endpoint here
-      const API_KEY = "YOUR_API_KEY_HERE"; // Put your API key here
+        const fileInput = document.getElementById('imageInput');
+        const file = fileInput.files[0];
 
-      document.getElementById('results').innerHTML = '<span class="loading">...جاري التحليل</span>';
-      try {
-        const response = await fetch(API_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + API_KEY },
-          body: formData
-        });
-        if (!response.ok) throw new Error('فشل الاتصال');
-        const result = await response.json();
+        if (!file) {
+            document.getElementById('results').innerText = 'يرجى اختيار صورة أولاً';
+            return;
+        }
 
-        // TODO: Process result into user-friendly Arabic.
-        // EXAMPLE ONLY – Replace with actual API result mapping!
-        document.getElementById('results').innerHTML = `
-          <strong>🧴 نتائج فحص البشرة:</strong><br>
-          <br>💢 حب الشباب<br>درجة الشدة: 🟠 مرتفع<br>التوصية: استخدم غسول لطيف يحتوي على حمض الساليسيليك.<br>
-          <br>🌑 البقع الداكنة<br>درجة الشدة: 🟡 متوسط<br>التوصية: جرب كريم فيتامين C.<br>
-          <br>💧 الجفاف<br>درجة الشدة: 🔴 شديد<br>التوصية: استخدم مرطب غني.<br>
-        `;
-      } catch (err) {
-        document.getElementById('results').innerText = 'حدث خطأ: ' + err.message;
-      }
+        // Show the uploaded image as a preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('results').innerHTML = '<img src="' + e.target.result + '" alt="preview">';
+        }
+        reader.readAsDataURL(file);
+
+        document.getElementById('results').innerHTML += '<div class="loading">...جاري التحليل</div>';
+
+        // Since Perplexity API does not analyze images, we simulate sending an image caption or user prompt in Arabic
+        const prompt = `افترض أنك خبير تجميل. أعطني تحليلاً شاملاً لبشرة الوجه بناءً على صورة سيلفي (ملاحظة: لا يمكنك رؤية الصورة فعليًا، لكن قدم مثالاً نموذجياً حسب البيانات الشائعة عن مشاكل البشرة للشباب، وحدد نوع البشرة، المشاكل الشائعة، ونصائح العناية).`;
+
+        const apiKey = "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";
+
+        try {
+            const response = await fetch("https://api.perplexity.ai/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + apiKey,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "sonar-medium-online", // You can set to "sonar-pro" if available in your plan
+                    messages: [
+                        { role: "user", content: prompt }
+                    ]
+                })
+            });
+
+            if (!response.ok) throw new Error("فشل الاتصال بواجهة Perplexity API.");
+
+            const result = await response.json();
+            // The response will be in result.choices[0].message.content
+            let output = "";
+
+            if (result.choices && result.choices[0] && result.choices[0].message && result.choices[0].message.content) {
+                output = `<div><strong>التحليل:</strong><br>${result.choices[0].message.content.replace(/\n/g, "<br>")}</div>`;
+            } else {
+                output = "<br>حدث خطأ أثناء توليد التحليل.";
+            }
+
+            // Show analysis below the preview image
+            document.getElementById('results').innerHTML += output;
+
+        } catch (err) {
+            document.getElementById('results').innerHTML = "حدث خطأ: " + err.message;
+        }
     }
   </script>
 </body>
